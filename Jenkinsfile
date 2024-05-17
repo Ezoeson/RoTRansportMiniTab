@@ -1,40 +1,40 @@
 pipeline {
-    agent  any
+    agent { label 'agentwindows' }
 
     environment {
         NODE_HOME = tool name: 'NodeJS', type: 'NodeJSInstallation'
- 
+        PATH = "${NODE_HOME}/bin:${env.PATH}"
     }
 
     stages {
-        stage('Check Version') {
+        stage('Vérifier la version') {
             steps {
                 sh 'node --version'
                 sh 'npm --version'
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Installer les dépendances') {
             steps {
                 sh 'npm install'
             }
         }
 
-        stage('Run Tests') {
+        stage('Exécuter les tests') {
             steps {
                 sh 'npm test'
             }
         }
 
-        stage('Build') {
+        stage('Construire') {
             steps {
                 sh 'npm run build'
             }
         }
 
-        stage('Deploy') {
+        stage('Déployer') {
             steps {
-     {
+                withCredentials([string(credentialsId: 'GITHUB_TOKEN', variable: 'GITHUB_TOKEN')]) {
                     sh 'npm run deploy'
                 }
             }
@@ -42,14 +42,17 @@ pipeline {
     }
 
     post {
-     
+        always {
+            archiveArtifacts artifacts: 'build/**', allowEmptyArchive: true
+            junit 'build/test-results/**/*.xml'
+        }
 
         success {
-            echo 'Pipeline succeeded!'
+            echo 'Pipeline réussie!'
         }
 
         failure {
-            echo 'Pipeline failed.'
+            echo 'Pipeline échouée.'
         }
     }
 }
